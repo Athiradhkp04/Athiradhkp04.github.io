@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inquis — Case Study | Athiradh KP</title>
+<meta name="description" content="A personal finance tracker rebuilt twice — from a first-year Tkinter script to a full Streamlit analytics platform.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="wrap">
+    <a href="../index.html" class="brand"><span class="dot"></span> ATHIRADH&nbsp;KP</a>
+    <ul class="navlinks">
+      <li><a href="../index.html#about">About</a></li>
+      <li><a href="../index.html#work">Work</a></li>
+      <li><a href="../index.html#research">Research</a></li>
+      <li><a href="../assets/Athiradh_KP_Resume.pdf" class="cta" target="_blank">Resume ↓</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="case-hero">
+  <div class="wrap">
+    <span class="plate-id">PLATE NO. 03 — ITERATION</span>
+    <h1>Inquis: an expense tracker I kept rebuilding until it was actually good</h1>
+    <p class="lede">A personal finance analytics app that started as a first-year Tkinter script and became a full Streamlit dashboard with budgeting, KPI cards, and spending-pattern insights.</p>
+    <div class="case-meta-row">
+      <div><span>Stack</span><strong>Python · Streamlit · SQLite · Pandas · Plotly</strong></div>
+      <div><span>Role</span><strong>Sole builder</strong></div>
+      <div><span>Status</span><strong>Deployed on Streamlit Cloud</strong></div>
+      <div><span>Live demo</span><strong>inquis-expensetracker.streamlit.app</strong></div>
+    </div>
+  </div>
+</section>
+
+<section class="case-body">
+  <div class="wrap case-layout">
+
+    <nav class="case-toc">
+      <a href="#background">Background</a>
+      <a href="#features">Features</a>
+      <a href="#versions">Version history</a>
+      <a href="#stack">Tech stack</a>
+    </nav>
+
+    <div class="case-copy">
+
+      <h2 id="background">Background</h2>
+      <p>This project began as a small expense-tracking script during my first year of college — the kind of project every beginner writes once. After revisiting the original codebase, I decided to rebuild it properly rather than let it sit as a dead first-year artifact. The redevelopment focused on usability, analytics depth, data visualization, and overall experience — moving from "records a number" to "tells you something useful about your spending." AI-assisted development tools were used during parts of the refactor and interface design.</p>
+
+      <h2 id="features">What it does now</h2>
+      <p><strong>Expense management</strong> — add and track expenses, attach notes, backdate entries for historical record-keeping, delete individual transactions, clear all transactions with a confirmation safeguard.</p>
+      <p><strong>Budget management</strong> — set monthly spending budgets, track remaining budget in real time, monitor budget utilization as a percentage.</p>
+      <p><strong>Analytics dashboard</strong> — total spending overview, budget-tracking metrics, remaining-budget calculations, top spending category, and a financial health score.</p>
+      <p><strong>Smart insights</strong> — spending-pattern summaries, budget-utilization insights, category-contribution analysis.</p>
+      <p><strong>Visualization</strong> — an interactive spending-distribution pie chart, category-wise spending breakdown, and daily spending-trend view.</p>
+
+      <h2 id="versions">Version history</h2>
+      <div class="diagram-list">
+        <div><span class="arrow">v2</span> <span class="desc">Desktop application — Tkinter, SQLite, Matplotlib</span></div>
+        <div><span class="arrow">v3</span> <span class="desc">Web-based analytics platform — Streamlit, SQLite, Pandas, Plotly (current, deployed)</span></div>
+      </div>
+      <p>Keeping both versions documented was intentional — it's a more honest record of how the project actually got better than presenting only the finished state.</p>
+
+      <h2 id="stack">Tech stack &amp; why</h2>
+      <p>Streamlit again made sense here for the same reason it did on SearchLens: it gets a real interactive dashboard running from Python without hand-building a frontend, which matters more for a personal tool than a polished custom UI would. SQLite gives persistent storage without provisioning a server — appropriate for a single-user personal-finance tool where the entire dataset is one person's transaction history. Plotly handles the interactive charts (trend line, category donut, monthly bar chart, 7-day rolling average) that a static Matplotlib chart couldn't give the v3 rebuild.</p>
+
+      <div class="case-nav">
+        <a href="searchlens.html">← SearchLens</a>
+        <a href="../index.html#work">Back to work overview →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-bottom">
+    <span>© 2026 ATHIRADH KP</span>
+    <a href="mailto:athiradhkp04@gmail.com">athiradhkp04@gmail.com</a>
+  </div>
+</footer>
+
+<script src="../assets/script.js"></script>
+</body>
+</html>

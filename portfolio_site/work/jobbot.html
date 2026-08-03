@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Bot — Case Study | Athiradh KP</title>
+<meta name="description" content="How I built an automated job-discovery pipeline: pagination bugs, resilient scraping, and a two-dimensional priority ranking engine.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="wrap">
+    <a href="../index.html" class="brand"><span class="dot"></span> ATHIRADH&nbsp;KP</a>
+    <ul class="navlinks">
+      <li><a href="../index.html#about">About</a></li>
+      <li><a href="../index.html#work">Work</a></li>
+      <li><a href="../index.html#research">Research</a></li>
+      <li><a href="../assets/Athiradh_KP_Resume.pdf" class="cta" target="_blank">Resume ↓</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="case-hero">
+  <div class="wrap">
+    <span class="plate-id">PLATE NO. 02 — AUTOMATION</span>
+    <h1>Job Bot: a job-discovery pipeline that runs three times a day and needs nothing from me</h1>
+    <p class="lede">A GitHub Actions–scheduled scraper that turns "manually checking job boards" into a background process — scraping, filtering, ranking, and deduplicating Internshala listings before pushing the result to Telegram.</p>
+    <div class="case-meta-row">
+      <div><span>Stack</span><strong>Python · BeautifulSoup · Requests · YAML · GitHub Actions · Telegram Bot API</strong></div>
+      <div><span>Role</span><strong>Sole builder, end to end</strong></div>
+      <div><span>Status</span><strong>Deployed, cron 3×/day</strong></div>
+      <div><span>Repo</span><strong>Private (available on request)</strong></div>
+    </div>
+  </div>
+</section>
+
+<section class="case-body">
+  <div class="wrap case-layout">
+
+    <nav class="case-toc">
+      <a href="#vision">Vision</a>
+      <a href="#what">What it does</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#tech">Tech choices</a>
+      <a href="#bugs">Bugs I hit</a>
+      <a href="#security">Secrets</a>
+      <a href="#scope">Scope cuts</a>
+      <a href="#limits">Limitations</a>
+    </nav>
+
+    <div class="case-copy">
+
+      <h2 id="vision">Vision</h2>
+      <p>I was applying to entry-level Data Analytics, Business Analytics, BI, SEO, and HR Analytics roles, and losing time to the same repetitive task: checking job boards multiple times a day, scanning mostly-irrelevant listings across several sites. I didn't want a tool that applied on my behalf — I still wanted to be the one deciding what to apply to. I wanted the <strong>discovery and filtering</strong> automated, not the judgment.</p>
+      <p>What I actually wanted to prove wasn't "can I scrape a website" — it was whether I could design a system that keeps working with zero manual maintenance: runs unattended three times a day, survives the source site changing its HTML under it, and can be retuned with new priorities without touching a line of code.</p>
+
+      <h2 id="what">What it actually does</h2>
+      <p>Job Bot runs automatically three times a day via GitHub Actions: it scrapes Internshala across several role categories relevant to my profile — Data Analyst, Data Scientist, Business Analyst, SEO, HR, Full-Stack Developer, Digital Marketing — normalizes every listing into a common format, filters out anything that doesn't match my role, location, stipend, or recency criteria, removes anything already notified, ranks what's left by a two-dimensional priority system, and sends the results as a formatted Telegram message. If nothing new has come through for a couple of days, it sends a "here's what's still live" check-in instead of staying silent.</p>
+
+      <h2 id="architecture">Architecture &amp; data flow</h2>
+      <p>A GitHub Actions cron schedule checks out the repo, installs dependencies, and runs <code>main.py</code> — the single entry point that orchestrates everything in sequence, then exits. Nothing runs continuously.</p>
+      <div class="diagram-list">
+        <div><span class="arrow">→</span> <strong>sources/internshala.py</strong><span class="desc">fetches raw listings, paginates each category, stops once a page returns fewer than 10 cards</span></div>
+        <div><span class="arrow">→</span> <strong>job_model.py</strong><span class="desc">defines the normalized job shape every source produces; owns the dedup hashing function</span></div>
+        <div><span class="arrow">→</span> <strong>filter.py</strong><span class="desc">applies every rule from config.yaml — role, exclude keywords, location/stipend, max-age</span></div>
+        <div><span class="arrow">→</span> <strong>dedup.py</strong><span class="desc">compares against seen_jobs.json, drops anything already seen</span></div>
+        <div><span class="arrow">→</span> <strong>priority.py</strong><span class="desc">two-key sort: role-group tier, then location tier within it</span></div>
+        <div><span class="arrow">→</span> <strong>notify.py</strong><span class="desc">formats an HTML Telegram message (or a digest if the quiet-streak threshold is hit) and posts it</span></div>
+      </div>
+      <p>A final Actions step commits the updated <code>seen_jobs.json</code> and <code>notify_state.json</code> back to the repo, so state persists across runs with no database.</p>
+
+      <h2 id="tech">Why these technologies</h2>
+      <p><strong>BeautifulSoup + Requests over Selenium/Playwright</strong> — Internshala's listing pages are server-rendered HTML, not JS-hydrated, so a headless browser would have been pure overhead. I evaluated two other sources (a Technopark/Infopark board and a Kerala government internship portal) and found both were JS-rendered — I disabled them rather than add a headless-browser dependency to the whole project for two secondary sources.</p>
+      <p><strong>YAML config over hardcoded constants</strong> — my actual search criteria changed multiple times: role priorities, location tiers, stipend thresholds were all revised more than once. Keeping that in one declarative file meant every change was a config edit and a <code>git push</code>, never a code change.</p>
+      <p><strong>GitHub Actions over a VPS</strong> — a hard requirement to run free indefinitely without maintaining infrastructure. A scheduled workflow that spins up, runs, and tears down costs nothing on the free tier.</p>
+      <p><strong>File-based JSON state over a database</strong> — the entire state to persist is "which job hashes have I already sent" and "when did I last send anything" — a few KB at realistic volume. Git itself becomes the persistence layer.</p>
+
+      <h2 id="bugs">Real problems I hit</h2>
+
+      <h3>The pagination bug</h3>
+      <p>The bot consistently reported far fewer HR postings than I could see browsing manually. Scraping, filtering, and dedup all looked correct in isolation.</p>
+      <div class="fieldnote">
+        <span class="tag">FIELD NOTE</span>
+        <p>The bug was that I only ever fetched page 1 of each category. Anything past it was never fetched — not filtered out, invisible before it reached my filtering logic. Fixed by paginating up to a configurable <code>max_pages_per_category</code>, stopping once a page returns fewer than 10 cards — a reliable signal that Kerala-specific results have run out and Internshala has started backfilling from other cities.</p>
+      </div>
+
+      <h3>Why the parser keys off URL patterns, not CSS classes</h3>
+      <p>My first version selected fields with CSS selectors like <code>h3.job-internship-name a</code>. Within about a week, Internshala changed its markup and every selector silently stopped matching.</p>
+      <div class="fieldnote">
+        <span class="tag">FIELD NOTE</span>
+        <p>The scraper kept running without errors, but every job came back as <em>"Untitled role"</em> — a worse failure mode than a crash, since nothing looked broken from the logs alone. I rewrote the parser to find listings by their detail-page URL pattern instead of CSS classes, and read plain text lines inside each card by recognizable patterns (a regex for "₹X,XXX/month" or "X days ago" shapes) rather than exact class names.</p>
+        <p>One follow-on bug: I assumed the "Actively hiring" badge always appeared before the company name. It sometimes appears after, which caused the parser to misread the badge as the location field. Fixed by checking both positions — caught because I tested against a snippet of real fetched HTML, not my imagined structure.</p>
+      </div>
+
+      <h3>Two-dimensional priority ranking</h3>
+      <p>Highest-priority roles (Data Analyst, Data Scientist, Business Analyst) needed to show regardless of location or pay. Among lower-priority roles like SEO, HR, and Digital Marketing, location needed to matter — Kerala first, then Bangalore/Mysore, then Tamil Nadu conditionally on stipend, North India deprioritized unless pay cleared a threshold. Implemented as a sort on a <code>(role_rank, location_rank)</code> tuple, with a <code>bypass_if_stipend_above</code> override that can promote a normally lower-priority role if it clears ₹12,000/month.</p>
+      <div class="fieldnote">
+        <span class="tag">FIELD NOTE</span>
+        <p>The tricky part: a role group's "bypass location and stipend rules entirely" flag (used for core roles I wanted shown from anywhere, at any pay) had to not also bypass the <em>hard</em> location exclusion list used to filter out Maharashtra postings entirely — two different rules that both touch location, easy to accidentally let one swallow the other. Verified with a real run: a Business Analyst fresher-job posting from Ahmedabad correctly ranked ahead of two lower-paying Ahmedabad internships, because its annualized stipend cleared the North India bar and the others didn't.</p>
+      </div>
+
+      <h3>Stipend normalization</h3>
+      <p>Internshala lists pay inconsistently — monthly, annual, ranges, or just "Competitive stipend." My thresholds all operate in monthly terms, so I built a parser that takes the lower bound of any range (deliberately conservative — better to under-estimate pay than let something through that doesn't clear a bar), divides "/year" figures by 12, and returns <code>None</code> rather than zero for unparseable text, so those postings get the benefit of the doubt in location filtering instead of being silently rejected. Verified against a real listing: "₹2,00,000 – 2,40,000/year" correctly normalizes to roughly ₹16,667/month.</p>
+
+      <h3>Deduplication and pruning</h3>
+      <p>Every job is hashed (from its detail-page link, falling back to title+company) and stored in <code>seen_jobs.json</code> with its first-seen date. A prune step runs before every write and drops hashes older than a configurable window (30 days by default), so the state file stays small.</p>
+      <div class="fieldnote">
+        <span class="tag">FIELD NOTE</span>
+        <p>The bot reported zero new matches across multiple runs over two days, despite finding ~13–14 postings that passed filtering each time. The dedup logic itself was fine — the real issue was a runtime/deployment gap: I'd edited <code>seen_jobs.json</code> locally without pushing it, so GitHub Actions was still reading the previously-committed version, unaffected by my local change. I added debug logging that prints the state file's absolute path and entry count at the start of every run, which made this instantly diagnosable going forward.</p>
+      </div>
+
+      <h2 id="security">Secrets &amp; security</h2>
+      <p>The Telegram bot token and chat ID are never hardcoded. <code>config.yaml</code> stores them as placeholders (<code>"${TELEGRAM_BOT_TOKEN}"</code>), and <code>load_config()</code> substitutes any <code>${ENV_VAR}</code> pattern with the actual environment variable at runtime — populated in Actions from encrypted repository secrets. There's an explicit runtime guard: before sending anything, it checks whether a credential is missing or still literally starts with <code>"${"</code> (substitution never happened) and exits with an error rather than failing silently.</p>
+      <div class="callout">
+        <p><em>Note for accuracy:</em> I haven't yet run a full history audit (<code>git log -p | grep -i token</code>, or a scanner like <code>gitleaks</code>) confirming no secret was ever accidentally committed. The repo is currently private. Before making it public, that check is still worth doing properly rather than assumed.</p>
+      </div>
+
+      <h2 id="scope">Cutbacks &amp; deliberate scope decisions</h2>
+      <ul>
+        <li><strong>Single job source</strong> instead of the several originally planned (Indeed, Wellfound, Technopark/Infopark, a Kerala government portal). Indeed blocks non-browser traffic; the local sources are JS-rendered. I chose to make one source genuinely robust instead of running several half-working ones.</li>
+        <li><strong>No database</strong> — two flat JSON files, version-controlled through git, cover the state this project needs.</li>
+        <li><strong>No web dashboard.</strong> The point was eliminating manual checking — building another interface to check would work against the goal. Telegram is the entire interface.</li>
+        <li><strong>No auto-apply or AI-generated summaries.</strong> Discovery and filtering are automated; the decision to apply, and how to present myself, stays mine.</li>
+      </ul>
+
+      <h2 id="limits">Limitations I'm upfront about</h2>
+      <ul>
+        <li>Depends entirely on one source — if Internshala changes markup again beyond what the URL-pattern parser handles, or blocks scraping outright, the bot goes quiet until I notice. There's no alerting for "the scraper itself failed," only for job matches.</li>
+        <li>Two sources (Technopark/Infopark, Kerala government portal) exist in the codebase but are disabled pending a headless-browser dependency — a known gap.</li>
+        <li>Location and role matching are keyword-based, not semantic. One real example: a plain "Business Analyst" filter initially pulled in unrelated "Equity Research Analyst" postings from finance, needing an explicit exclude-keyword pass.</li>
+        <li>The relative-date parser covers every phrasing I've observed so far, not guaranteed exhaustive.</li>
+        <li>The "digest after N quiet days" feature is newly added and, as of writing, tested thoroughly in isolation but not yet proven end-to-end over a real multi-day production cycle.</li>
+      </ul>
+
+      <div class="case-nav">
+        <a href="../index.html#work">← Back to work</a>
+        <a href="searchlens.html">Next: SearchLens →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-bottom">
+    <span>© 2026 ATHIRADH KP</span>
+    <a href="mailto:athiradhkp04@gmail.com">athiradhkp04@gmail.com</a>
+  </div>
+</footer>
+
+<script src="../assets/script.js"></script>
+</body>
+</html>

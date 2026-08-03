@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SearchLens — Case Study | Athiradh KP</title>
+<meta name="description" content="Building a 10-module SEO audit suite, and the real bugs found by testing against live websites instead of trusting 'it's done'.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="wrap">
+    <a href="../index.html" class="brand"><span class="dot"></span> ATHIRADH&nbsp;KP</a>
+    <ul class="navlinks">
+      <li><a href="../index.html#about">About</a></li>
+      <li><a href="../index.html#work">Work</a></li>
+      <li><a href="../index.html#research">Research</a></li>
+      <li><a href="../assets/Athiradh_KP_Resume.pdf" class="cta" target="_blank">Resume ↓</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="case-hero">
+  <div class="wrap">
+    <span class="plate-id">PLATE NO. 01 — DIAGNOSTIC TOOL</span>
+    <h1>SearchLens: an SEO audit suite that actually reads the page it's judging</h1>
+    <p class="lede">A Python + Streamlit tool that crawls a live URL through 10 analysis modules and explains, in plain language, why something is a problem — not just that it is.</p>
+    <div class="case-meta-row">
+      <div><span>Stack</span><strong>Python · Streamlit · BeautifulSoup · Pandas · Plotly · ReportLab</strong></div>
+      <div><span>Role</span><strong>Architecture &amp; review; built with Windsurf, reviewed with Claude</strong></div>
+      <div><span>Status</span><strong>Working, tested against live sites</strong></div>
+      <div><span>Repo</span><strong>github.com/Athiradhkp04/searchlens</strong></div>
+    </div>
+  </div>
+</section>
+
+<section class="case-body">
+  <div class="wrap case-layout">
+
+    <nav class="case-toc">
+      <a href="#vision">Vision</a>
+      <a href="#what">What it does</a>
+      <a href="#tech">Tech choices</a>
+      <a href="#process">How I built it</a>
+      <a href="#bugs">Real bugs I found</a>
+      <a href="#scope">Scope cuts</a>
+      <a href="#limits">Limitations</a>
+    </nav>
+
+    <div class="case-copy">
+
+      <h2 id="vision">Vision</h2>
+      <p>I wanted a project that would prove something specific about how I work, not just what I know. A lot of student SEO/analytics projects are either a templated dashboard over a Kaggle dataset, or a wrapper around someone else's paid API. I wanted something that actually crawls a live website, reasons about what it finds, and explains why something is a problem — and that I could plausibly run for a freelance client and trust the output of.</p>
+
+      <h2 id="what">What it actually does</h2>
+      <p>You give SearchLens a URL, and it runs that page through 10 analysis modules — metadata, heading structure, images, links, content quality, technical SEO, page speed, AI-generated recommendations, a weighted overall score, and export. Every check hits the real page over HTTP and parses the real HTML. The output is an interactive dashboard plus downloadable JSON/CSV/PDF reports.</p>
+
+      <h2 id="tech">Why these technologies</h2>
+      <ul>
+        <li><strong>Python + Streamlit</strong> — turns a Python script into a working dashboard with almost no UI code, so time went into the analysis logic that actually mattered.</li>
+        <li><strong>BeautifulSoup + Requests</strong> — reliable page fetching and HTML parsing with no paid API required, a deliberate constraint so anyone could clone and run it for free.</li>
+        <li><strong>Pandas</strong> — structuring and displaying tabular results (images found, links found).</li>
+        <li><strong>Plotly</strong> — the overall-score gauge chart on the dashboard.</li>
+        <li><strong>ReportLab</strong> — PDF export, for the "send this to a client" use case rather than just a live dashboard.</li>
+      </ul>
+      <p>No paid APIs by default — no PageSpeed Insights key, no LLM key required — so the tool works out of the box with a single <code>pip install</code>.</p>
+
+      <h2 id="process">How I actually built it</h2>
+      <p>I started from a detailed module-by-module spec, written before any code existed — what counts as a good title length, what a canonical tag is for, why heading hierarchy matters — so I was thinking through the actual SEO logic rather than delegating that thinking away. I used Claude to help design and review the architecture, and Windsurf to generate and iterate on the code, but stayed in the loop reviewing every module and testing the finished app against real websites myself.</p>
+      <div class="callout">
+        <p>Early on, Windsurf reported the full module skeleton as implemented and working. That description was accurate on paper — but a description of code isn't proof the code works. So instead of accepting it, I ran the app against two real, structurally different sites: djangoproject.com and a long, image-heavy Wikipedia article. That decision — testing against real data instead of trusting a "fully working" self-report — is what surfaced every real bug below. None were visible just from reading the code.</p>
+      </div>
+
+      <h2 id="bugs">Real bugs I found and fixed</h2>
+
+      <div class="fieldnote">
+        <span class="tag">BUG 01 — REDUNDANT FETCHING</span>
+        <p>Each of the 7 crawling modules independently re-fetched the same page — 7 HTTP requests for one audit. Caught by asking why auditing one page needed seven network calls. Fixed by fetching once and passing the same parsed page into every module, with <code>st.cache_data</code> so re-running the same URL in a session doesn't refetch at all.</p>
+      </div>
+
+      <div class="fieldnote">
+        <span class="tag">BUG 02 — RATE LIMITING READ AS BROKEN CONTENT</span>
+        <p>When verifying that images and links actually work, the tool makes live requests to each one. On Wikipedia, several images came back HTTP 429 — "too many requests" — and the original code treated that the same as a genuinely dead resource. That single bug dragged Wikipedia's image score to 15/100 with nothing actually broken. Fixed by treating 429 as its own "couldn't verify" category that doesn't penalize the score, plus a small delay between requests so it happens less. Probably the most important fix — it's exactly the kind of thing that would make the tool actively misleading on image-heavy sites.</p>
+      </div>
+
+      <div class="fieldnote">
+        <span class="tag">BUG 03 — PARAGRAPH DETECTION</span>
+        <p>An early version split page text into "paragraphs" using raw newline characters. A 5,774-word Wikipedia article got reported as "1 paragraph." Caught by reading the Content tab output and noticing a number that couldn't be right. Fixed to use BeautifulSoup to find actual <code>&lt;p&gt;</code> tags instead of guessing from whitespace.</p>
+      </div>
+
+      <div class="fieldnote">
+        <span class="tag">BUG 04 &amp; 05 — FALSE POSITIVES IN LINK ANALYSIS</span>
+        <p>Wikipedia's language-switcher links use short labels in their own scripts — 日本語, 한국어, 中文 — and the anchor-text-length check flagged these as "too short," even though 2–3 characters is normal for a language name in its own script. Separately, links wrapping only an image (a standard, valid pattern) were flagged as "empty anchor text." Fixed the short-text check to apply only to ASCII text, and added a check to skip the empty-anchor flag when a link contains an image.</p>
+      </div>
+
+      <div class="fieldnote">
+        <span class="tag">BUG 06 — ROBOTS META MISCLASSIFICATION</span>
+        <p>A missing robots meta tag just means default behavior (index, follow) — fine — but the original logic flagged it as a warning regardless. Fixed to only flag when a tag is present <em>and</em> explicitly says <code>noindex</code>.</p>
+      </div>
+
+      <p>Every fix was verified with actual before/after numbers from re-running the audits, not just by reading the corrected code and assuming it worked.</p>
+
+      <h2 id="scope">Cutbacks &amp; deliberate scope decisions</h2>
+      <ul>
+        <li><strong>Single-page audits, not full-site crawls</strong> — a real crawler is a meaningfully bigger project (crawl queues, robots.txt crawl-delay, rate-limit handling across many pages). Better to ship a genuinely solid single-page tool than a half-working site-wide crawler.</li>
+        <li><strong>AI recommendations are rule-based, not live LLM calls, by default.</strong> Every failed check maps to a plain-English explanation via hardcoded logic. A hook (<code>generate_ai_recommendations_hook()</code>) exists for a real LLM call later, but the rule-based version ships first so the tool works with zero API keys and zero running cost.</li>
+        <li><strong>Page Speed Snapshot is a heuristic</strong>, not real Lighthouse data — it counts CSS/JS files, image count, and HTML size and buckets them low/medium/high, rather than calling Google's PageSpeed Insights API.</li>
+        <li><strong>No database, no persistence</strong> — everything lives in the Streamlit session. An acceptable tradeoff for shipping speed; SQLite-backed audit history to track a site's score over time is a natural next step.</li>
+      </ul>
+
+      <h2 id="limits">Limitations I'm upfront about</h2>
+      <ul>
+        <li>Tested against two real sites so far, not a broad range of CMS platforms (WordPress, Shopify) or JS-heavy single-page apps.</li>
+        <li>No headless browser — sites with aggressive bot detection (Cloudflare challenges) may fail, since this is <code>requests</code>-based, not Playwright/Selenium.</li>
+        <li>Keyword density is a simple top-10 term-frequency count, not true TF-IDF or competitor-relative analysis.</li>
+        <li>English-only content analysis.</li>
+        <li>No automated test suite yet — verification so far has been manual, real-site testing rather than unit tests. Known gap, on the list to close.</li>
+      </ul>
+
+      <div class="case-nav">
+        <a href="jobbot.html">← Job Bot</a>
+        <a href="inquis.html">Next: Inquis →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-bottom">
+    <span>© 2026 ATHIRADH KP</span>
+    <a href="mailto:athiradhkp04@gmail.com">athiradhkp04@gmail.com</a>
+  </div>
+</footer>
+
+<script src="../assets/script.js"></script>
+</body>
+</html>
